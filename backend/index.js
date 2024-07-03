@@ -17,12 +17,11 @@ const io = new Server(server,{
 })
 
 io.on('connection', (socket) => {
-    console.log('client connected!');
+    console.log(`client connected: ${socket.id}`);
 
-    socket.on('chat message', (msg) => {
+    socket.on('chat-message', (msg) => {
         console.log('Received message ' + msg);
-      
-        io.emit('chat message', msg);
+        socket.broadcast.emit("recieve-message",msg)
     })
 
 })

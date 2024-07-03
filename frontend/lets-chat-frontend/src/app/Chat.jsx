@@ -2,19 +2,25 @@
 import React, { useEffect, useState } from 'react'
 import io from 'socket.io-client'
 
-
 const Chat = () => {
-
+  
   const [message, setMessage] = useState("")
+  const [messages, setMessages] = useState([]);
   const [socket,setSocket] = useState(null)
 
+  
   useEffect(() => {
-    //establish websocket connection.
+
+    //establish websocket connection when the component mounts.
     const newSocket = io('http://localhost:8080')
     setSocket(newSocket)
-
-    //cleanup function
-    return () => newSocket.close()
+    
+    newSocket.on('recieve-message',(msg)=> {
+      setMessages(prevMessages => [...prevMessages, msg])
+    })
+    
+    // Cleanup function to remove the event listener when the component unmounts.
+    return () => newSocket.off('recieve-message')
 
   },[])
 
@@ -22,15 +28,25 @@ const Chat = () => {
     e.preventDefault()
     console.log(message);
     if(socket){
-      socket.emit('chat message',message)
+      socket.emit('chat-message',message)
+      setMessages(prevMessages => [...prevMessages, message])
       setMessage('')
     }
   }
 
   return (
-    <div className='min-w-[40%]'>
-      <h1>Chat</h1>
-      <form onSubmit={sendMessage} className='my-10' >
+    <div className='min-h-[100vh] flex flex-col justify-between'>
+
+      <div className='msgs-container text-right m-5'>
+                {messages.map((message, index) => (
+                    <div key={index} className='msg text-right my-5'>
+                        {message}
+                    </div>
+                ))}
+      </div>
+      
+      {/* <h1>Chat</h1> */}
+      <form onSubmit={sendMessage} className='my-10  min-w-[40%] mx-auto' >
 
       <div class="relative">  
                <input type="text"
