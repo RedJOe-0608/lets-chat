@@ -1,9 +1,12 @@
 import User from "../models/userModel.js";
 import bcrypt from 'bcrypt'
+
+
 const signup = async(req,res) => {
     try {
         const {username,password} = req.body
-        const hashedPassword = await bcrypt.hash(password,10)
+        const salt = await bcrypt.genSalt(10)
+        const hashedPassword = await bcrypt.hash(password,salt)
 
         const foundUser = await User.findOne({username})
 
@@ -17,7 +20,7 @@ const signup = async(req,res) => {
         }
     } catch (error) {
         console.log(error);
-        res.status(201).json({message: 'Sign up failed!' })
+        res.status(500).json({message: 'Sign up failed!' })
     }
 }
 
