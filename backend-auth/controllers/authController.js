@@ -36,7 +36,11 @@ export const signin = async(req, res)=>{
         const passwordMatch = await bcrypt.compare(password, user?.password || "");
         if(!passwordMatch)
             return res.status(401).json({error: 'Auth failed'});
+
         generateJWTAndSetCookie(user._id, res);
+        
+        console.log(`user ${user.username} with ${user._id} signed in successfully!`);
+        
         res.status(200).json({
             _id: user._id,
             username: user.username
