@@ -31,8 +31,8 @@ io.on('connection', (socket) => {
     socket.on('chat-message', (msg) => {
         //for testing
         console.log('Received message ' + msg.text);
-        console.log('Received message ' + msg.sender);
-        console.log('Received message ' + msg.receiver);
+        console.log('Sender: ' + msg.sender);
+        console.log('Receiver: ' + msg.receiver);
         const receiverSocket = userSocketMap[msg.receiver];
         if(receiverSocket)
             receiverSocket.emit("receive-message",msg)
