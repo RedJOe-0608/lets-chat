@@ -3,12 +3,16 @@ import React, { useState } from 'react'
 import axios from "axios";
 import { useRouter } from 'next/navigation'
 import Link from 'next/link';
+import { toast } from 'react-toastify';
+import { useAuthStore } from '@/app/zustand/useAuthStore';
 
-const Signin = () => {
+const SigninPage = () => {
 
     const router = useRouter()
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('')
+
+    const {updateAuthName} = useAuthStore()
 
 
     const signinFunc = async (e) => {
@@ -23,12 +27,15 @@ const Signin = () => {
             })
 
             console.log(res);
-           
+            updateAuthName(username)
+            toast.success(res.data.message)
             router.push('/chat')
  
  
         } catch (error) {
-            console.log("Error in login function : ", error.message);
+            console.log(error);
+            toast.error("Error in signin function : ", error.message)
+            console.log("Error in signin function : ", error.message);
         }
     }
 
@@ -64,7 +71,7 @@ const Signin = () => {
                 //   onClick={signinFunc}
                   class="w-full text-black bg-white hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">Sign in</button>
                   <p class="text-sm font-light text-gray-500 dark:text-gray-400">
-                      Don’t have an account yet? <Link href="/signup" class="font-medium text-primary-600 hover:underline dark:text-primary-500">
+                      Don’t have an account yet? <Link href="/auth/signup" class="font-medium text-primary-600 hover:underline dark:text-primary-500">
                       <button>Sign up</button>
                       </Link>
                   </p>
@@ -76,4 +83,4 @@ const Signin = () => {
   )
 }
 
-export default Signin
+export default SigninPage

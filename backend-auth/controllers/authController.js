@@ -31,11 +31,13 @@ export const signin = async(req, res)=>{
     try {
         const {username, password} = req.body;
         const user = await User.findOne({username});
+
         if(!user)
-            return res.status(401).json({error: 'Auth failed'});
+            return res.status(401).json({error: 'User does not exist!'});
+
         const passwordMatch = await bcrypt.compare(password, user?.password || "");
         if(!passwordMatch)
-            return res.status(401).json({error: 'Auth failed'});
+            return res.status(401).json({error: 'Invalid username or password!'});
 
         generateJWTAndSetCookie(user._id, res);
         
@@ -43,11 +45,12 @@ export const signin = async(req, res)=>{
         
         res.status(200).json({
             _id: user._id,
-            username: user.username
+            username: user.username,
+            message: "Signed in successfully!"
         });
     } catch (error) {
         console.log(error.message);
-        res.status(500).json({error: 'Login failed'});
+        res.status(500).json({error: 'Signin failed'});
     }}
  
 

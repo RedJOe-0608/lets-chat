@@ -1,18 +1,25 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import io from 'socket.io-client'
+import { useAuthStore } from '../zustand/useAuthStore'
 
 const ChatPage = () => {
   
   const [message, setMessage] = useState("")
   const [messages, setMessages] = useState([]);
   const [socket,setSocket] = useState(null)
+  
+  const {authName} = useAuthStore()
 
   
   useEffect(() => {
 
     //establish websocket connection when the component mounts.
-    const newSocket = io('http://localhost:8080')
+    const newSocket = io('http://localhost:8080',{
+      query: {
+        username: authName
+      }
+    })
     setSocket(newSocket)
     
     newSocket.on('recieve-message',(message)=> {
@@ -26,9 +33,14 @@ const ChatPage = () => {
 
   const sendMessage = (e) => {
     e.preventDefault()
+    const msgToBeSent = {
+      text: message,
+      sender: "joe",
+      receiver: "sasha"
+    }
     console.log(message);
     if(socket){
-      socket.emit('chat-message',message)
+      socket.emit('chat-message',msgToBeSent)
       setMessages(prevMessages => [...prevMessages, {text: message, sentByCurrUser: true}])
       setMessage('')
     }
@@ -36,7 +48,7 @@ const ChatPage = () => {
 
   return (
     <div className='h-screen flex flex-col justify-between'>
-
+      <h1>{authName}</h1>
       <div className='msgs-container text-right m-5 h-4/5 overflow-y-auto'>
                 {messages.map((message, index) => (
                   <div key={index} 

@@ -4,12 +4,15 @@ import axios from "axios";
 import { useRouter } from 'next/navigation'
 import Link from 'next/link';
 import { toast } from 'react-toastify';
+import { useAuthStore } from '@/app/zustand/useAuthStore';
 
 const SignupPage = () => {
 
     const router = useRouter()
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('')
+
+    const {updateAuthName} = useAuthStore()
 
 
     const signUpFunc = async (e) => {
@@ -28,6 +31,7 @@ const SignupPage = () => {
                 toast.error('Username already exists')
             } 
             else {
+                updateAuthName(username)
                 toast.success('Signed up successfully!')
                 router.push('/chat')
             }
@@ -70,7 +74,7 @@ const SignupPage = () => {
                 //   onClick={signUpFunc}
                   class="w-full text-black bg-white hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">Sign up</button>
                   <p class="text-sm font-light text-gray-500 dark:text-gray-400">
-                      Already have an account? <Link href="/signin" class="font-medium text-primary-600 hover:underline dark:text-primary-500">
+                      Already have an account? <Link href="/auth/signin" class="font-medium text-primary-600 hover:underline dark:text-primary-500">
                         <button>Sign in</button></Link>
                   </p>
               </form>
