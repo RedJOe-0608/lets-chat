@@ -22,12 +22,12 @@ const ChatPage = () => {
     })
     setSocket(newSocket)
     
-    newSocket.on('recieve-message',(message)=> {
-      setMessages(prevMessages => [...prevMessages, {text: message, sentByCurrUser: false}])
+    newSocket.on('receive-message',(message)=> {
+      setMessages(prevMessages => [...prevMessages, {text: message.text, sentByCurrUser: false}])
     })
     
     // Cleanup function to remove the event listener when the component unmounts.
-    return () => newSocket.off('recieve-message')
+    return () => newSocket.off('receive-message')
 
   },[])
 
@@ -35,7 +35,7 @@ const ChatPage = () => {
     e.preventDefault()
     const msgToBeSent = {
       text: message,
-      sender: "joe",
+      sender: authName,
       receiver: "sasha"
     }
     console.log(message);
@@ -64,7 +64,7 @@ const ChatPage = () => {
       {/* <h1>Chat</h1> */}
       <form onSubmit={sendMessage} className='my-10 h-1/5 flex items-end justify-center' >
 
-      <div class="relative min-w-[40%]">  
+      <div className="relative min-w-[40%]">  
                <input type="text"
                        value={message}
                        onChange={(e) => setMessage(e.target.value)}

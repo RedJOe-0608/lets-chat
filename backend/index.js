@@ -18,19 +18,24 @@ const io = new Server(server,{
     }
 })
 
+const userSocketMap = {};
+
 io.on('connection', (socket) => {
     console.log(`client connected: ${socket.id}`);
 
     const username = socket.handshake.query.username;
     console.log('Username:', username);
 
+    userSocketMap[username] = socket
 
     socket.on('chat-message', (msg) => {
-        // console.log(msg);
+        //for testing
         console.log('Received message ' + msg.text);
-        console.log('Received message ' + msg?.sender);
-        console.log('Received message ' + msg?.receiver);
-        socket.broadcast.emit("recieve-message",msg)
+        console.log('Received message ' + msg.sender);
+        console.log('Received message ' + msg.receiver);
+        const receiverSocket = userSocketMap[msg.receiver];
+        if(receiverSocket)
+            receiverSocket.emit("receive-message",msg)
     })
 
 })
