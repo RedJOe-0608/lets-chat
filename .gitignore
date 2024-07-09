@@ -2,4 +2,5 @@
 /backend/.env
 /frontend/lets-chat/frontend/node_modules
 /backend-auth/node_modules
+/api-gateway/node_modules
 /backend-auth/.env
