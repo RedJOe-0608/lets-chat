@@ -3,12 +3,19 @@ import dotenv from "dotenv"
 import http from 'http'
 import { Server } from "socket.io"
 import cors from 'cors'
+import connectToDB from "./db/connectToMongo.js"
+import { addMsgToConversation } from "./controllers/messagesController.js"
+import messagesRouter from './routes/messagesRoutes.js'
 
 dotenv.config()
 const PORT = process.env.PORT || 5000
+connectToDB()
 
 const app = express()
 app.use(cors())
+
+app.use('/messages',messagesRouter)
+
 const server = http.createServer(app)
 const io = new Server(server,{
     cors: {
@@ -36,6 +43,8 @@ io.on('connection', (socket) => {
         const receiverSocket = userSocketMap[msg.receiver];
         if(receiverSocket)
             receiverSocket.emit("receive-message",msg)
+
+        addMsgToConversation([msg.sender,msg.receiver],msg)
     })
 
 })

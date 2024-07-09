@@ -6,16 +6,20 @@ import axios from "axios";
 import { useUsersStore } from '../zustand/useUsersStore';
 import ChatUsers from '../_components/ChatUsers';
 import { useChatReceiverStore } from '../zustand/useChatReceiverStore';
+import Navbar from '../_components/Navbar';
+import { useChatMessagesStore } from '../zustand/useChatMessagesStore';
 
 const ChatPage = () => {
   
   const [message, setMessage] = useState("")
-  const [messages, setMessages] = useState([]);
+  const [sentMessage,setSentMessage] = useState({})
+  const [receivedMessage,setReceivedMessage] = useState({})
   const [socket,setSocket] = useState(null)
   
   const {authName} = useAuthStore()
   const {users,updateUsers} = useUsersStore()
   const {chatReceiver}= useChatReceiverStore()
+  const {chatMessages,updateChatMessages}= useChatMessagesStore()
 
   const getUsers = async() => {
     const res = await axios.get('http://localhost:5000/users',
@@ -25,27 +29,6 @@ const ChatPage = () => {
     // console.log(res.data);
     updateUsers(res.data)
   }
-  
-  useEffect(() => {
-
-    //establish websocket connection when the component mounts.
-    const newSocket = io('http://localhost:8080',{
-      query: {
-        username: authName
-      }
-    })
-    setSocket(newSocket)
-    
-    newSocket.on('receive-message',(message)=> {
-      setMessages(prevMessages => [...prevMessages, {text: message.text, sentByCurrUser: false}])
-    })
-
-    getUsers()
-    
-    // Cleanup function to remove the event listener when the component unmounts.
-    return () => newSocket.off('receive-message')
-
-  },[])
 
   const sendMessage = (e) => {
     e.preventDefault()
@@ -57,24 +40,59 @@ const ChatPage = () => {
     console.log(message);
     if(socket){
       socket.emit('chat-message',msgToBeSent)
-      setMessages(prevMessages => [...prevMessages, {text: message, sentByCurrUser: true}])
+      setSentMessage(msgToBeSent)
       setMessage('')
     }
   }
+  
+  useEffect(() => {
+
+    //establish websocket connection when the component mounts.
+    const newSocket = io('http://localhost:8080',{
+      query: {
+        username: authName
+      }
+    })
+    setSocket(newSocket)
+
+    newSocket.on('receive-message',(message)=> {
+        setReceivedMessage(message)
+    })
+
+    getUsers()
+    
+    // Cleanup function to remove the event listener when the component unmounts.
+    return () => newSocket.off('receive-message')
+
+  },[])
+
+  useEffect(()=> {
+    updateChatMessages([...chatMessages,receivedMessage])
+  },[receivedMessage])
+
+  useEffect(()=> {
+    updateChatMessages([...chatMessages,sentMessage])
+  },[sentMessage])
+
+ 
+
+  console.log("Chat receiver is: ",chatReceiver);
 
   return (
-    <div className='h-screen flex divide-x-4'>
+    <div className='flex flex-col h-screen'>
+    <Navbar />
+    <div className=' flex flex-grow divide-x-4'>
         <ChatUsers />
-        <div className=' w-4/5 bg-red-500 flex flex-col justify-between'>
-    <span>
-      {authName} is chatting with {chatReceiver}
-    </span>
+        <div className=' w-4/5 bg-gray-900 text-gray-200 flex flex-col justify-between'>
+    <div className='w-full bg-gray-700 h-20'>
+      <h2 className='text-md p-4'>{chatReceiver}</h2>
+    </div>
     <div className='msgs-container text-right m-5 h-4/5 overflow-y-auto'>
-              {messages.map((message, index) => (
+              {chatMessages?.map((message, index) => (
                 <div key={index} 
-                  className={`msg my-5 ${message.sentByCurrUser ? 'text-right' : 'text-left'} `}
+                className={`msg my-5 ${message.sender === authName ? 'text-right' : 'text-left'} `}
                 >
-                  <span className={`${message.sentByCurrUser ? 'bg-blue-200' : 'bg-green-200'} p-3 rounded-lg`}>
+                <span className={`${ !chatReceiver ? 'hidden' : message.sender === authName ? 'bg-orange-500' : 'bg-blue-500'} p-3 rounded-lg`}>
                     {message.text}
                 </span>
                 </div>
@@ -87,7 +105,7 @@ const ChatPage = () => {
             <input type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Type your text here"
+                    placeholder="Type your text here..."
                     required
                     className="w-full block p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"  />
             <button type="submit"
@@ -100,6 +118,7 @@ const ChatPage = () => {
     </form>
   </div>
      
+    </div>
     </div>
   )
 }
