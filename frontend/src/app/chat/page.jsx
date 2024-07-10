@@ -8,6 +8,8 @@ import ChatUsers from '../_components/ChatUsers';
 import { useChatReceiverStore } from '../zustand/useChatReceiverStore';
 import Navbar from '../_components/Navbar';
 import { useChatMessagesStore } from '../zustand/useChatMessagesStore';
+import { useSocketStore } from '../zustand/useSocketStore';
+import { useGroupsStore } from '../zustand/useGroupsStore';
 
 const ChatPage = () => {
   
@@ -18,8 +20,10 @@ const ChatPage = () => {
   
   const {authName} = useAuthStore()
   const {users,updateUsers} = useUsersStore()
+  const {updateGroups} = useGroupsStore()
   const {chatReceiver}= useChatReceiverStore()
   const {chatMessages,updateChatMessages}= useChatMessagesStore()
+  const {updateSocket}= useSocketStore()
 
   const getUsers = async() => {
     const res = await axios.get('http://localhost:5000/users',
@@ -28,6 +32,15 @@ const ChatPage = () => {
       })
     // console.log(res.data);
     updateUsers(res.data)
+  }
+
+  const getGroups = async() => {
+    const res = await axios.get('http://localhost:8080/groups',
+      {
+      withCredentials: true
+    })
+    console.log(res.data);
+    updateGroups(res.data)
   }
 
   const sendMessage = (e) => {
@@ -54,12 +67,14 @@ const ChatPage = () => {
       }
     })
     setSocket(newSocket)
+    updateSocket(newSocket)
 
     newSocket.on('receive-message',(message)=> {
         setReceivedMessage(message)
     })
 
     getUsers()
+    getGroups()
     
     // Cleanup function to remove the event listener when the component unmounts.
     return () => newSocket.off('receive-message')
