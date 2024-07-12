@@ -55,6 +55,7 @@ const ChatPage = () => {
     newSocket.on('receive-message',(message)=> {
         console.log("received message", message);
           setReceivedMessage(message)
+          
       })
     
   
@@ -155,32 +156,42 @@ const ChatPage = () => {
   return (
     <div className='flex flex-col h-screen'>
     <Navbar />
-    <div className=' flex flex-grow divide-x-4'>
+    <div className=' flex h-12 flex-grow divide-x-4'>
         <ChatUsers 
         currentGroupName={currentGroupName}
-        setCurrentGroupName={setCurrentGroupName}/>
+        setCurrentGroupName={setCurrentGroupName}
+        receivedMessage={receivedMessage}
+        />
         <div className=' w-4/5 bg-gray-900 text-gray-200 flex flex-col justify-between'>
     <div className='w-full bg-gray-700 h-20'>
       <h2 className='text-md p-4'>{chatReceiver}</h2>
     </div>
-    <div className='msgs-container text-right m-5 h-4/5 overflow-y-auto'>
+    <div className='msgs-container text-right p-2 m-5 h-4/5 overflow-y-auto'>
               {chatMessages && chatMessages?.map((message, index) => (
                 <div key={index} 
-                className={`msg my-5 ${message?.sender === authName ? 'text-right' : 'text-left'} `}
+                className={`msg my-10 ${message?.sender === authName ? 'text-right' : 'text-left'}`}
                 >
-              <span className={`${ message?.sender === authName ? 'bg-orange-500' :
+                  <div>
+                  <span className={`${ message?.sender === authName ? 'bg-orange-500' :
                   (( message.receiver === authName && message?.sender === chatReceiver) //1:1 msg
                   || 
                   (message?.receiver !== authName && message?.receiver === chatReceiver)) //group msg
-                  ? 'bg-blue-500' : 'hidden'} p-3 rounded-lg`}
+                  ? 'bg-blue-500' : 'hidden'} p-3 rounded-lg `}
                 >
                     {message?.text}
                 </span>
+                  </div>
+                    {(message?.receiver !== authName && message?.receiver === chatReceiver) &&currentGroupName && 
+                    (
+                      <div className={` mt-3 text-sm text-gray-400 truncate`}>
+                      <span className='w-20' >{message?.sender}</span>
+                      </div>
+                    )}
                 </div>
               ))}
     </div>
     
-    <form onSubmit={sendMessage} className='my-10 h-1/5 flex items-end justify-center' >
+    <form onSubmit={sendMessage} className='mb-6 h-1/5 flex items-end justify-center' >
 
     <div className="relative min-w-[40%]">  
             <input type="text"

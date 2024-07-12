@@ -9,18 +9,40 @@ import Modal from './Modal';
 import { useGroupsStore } from '../zustand/useGroupsStore';
 import { useGroupParticipantsStore } from '../zustand/useGroupParticipantsStore';
 
-const ChatUsers = ({currentGroupName,setCurrentGroupName}) => {
+const ChatUsers = ({currentGroupName,setCurrentGroupName,receivedMessage}) => {
 
  const { users } = useUsersStore();
  const {groups,updateGroups} = useGroupsStore()
  const {authName} = useAuthStore()
 
  const [newGroup, setNewGroup] = useState('')
-
+ 
  const {chatReceiver,updateChatReceiver} = useChatReceiverStore()
  const {updateChatMessages} = useChatMessagesStore()
  const{groupParticipants} = useGroupParticipantsStore()
+ 
+ const [unreadMessages, setUnreadMessages] = useState({user: 0})
 
+ useEffect(() => {
+  console.log(users);
+  console.log(groups);
+  if (users.length > 0 && groups.length > 0) {
+    const initialUnreadMessages = {}
+    users.forEach((user => {
+      initialUnreadMessages[user.username] = 0
+    }))
+    groups.forEach((group => {
+      initialUnreadMessages[group.groupName] = 0
+    }))
+    setUnreadMessages(initialUnreadMessages);
+    console.log("Initial unread messages set:", initialUnreadMessages); // Logging initial state setup
+  }
+
+}, [users,groups]);
+
+// useEffect(() => {
+//   console.log("Unread messages state updated:", unreadMessages);
+// }, [unreadMessages]); // Log whenever unreadMessages state updates
 
 // this useEffect is for updating the UI after a new group has been created. 
  useEffect(() => {
@@ -29,6 +51,7 @@ const ChatUsers = ({currentGroupName,setCurrentGroupName}) => {
  },[newGroup])
 
 console.log(groups);
+console.log(unreadMessages);
  const [isModalOpen, setIsModalOpen] = useState(false);
 
  const openModal = () => {
@@ -78,6 +101,36 @@ console.log(groups);
 
  },[chatReceiver])
 
+ useEffect(() => {
+  if (receivedMessage) {
+    let newValue = null
+    if(receivedMessage.receiver === authName)
+      newValue = receivedMessage.sender;
+    else
+      newValue = receivedMessage.receiver
+
+     setUnreadMessages((msg) => ({
+        ...msg,
+        [newValue]: (msg[newValue] || 0) + 1
+      }));
+    
+  }
+
+  console.log(unreadMessages);
+}, [receivedMessage]);
+
+useEffect(()=> {
+      console.log('minus');
+      setUnreadMessages((msg) => ({
+        ...msg,
+        [chatReceiver]: 0
+      }));
+    
+},[chatReceiver])
+
+
+
+
  return (
    <div className=' relative flex flex-col w-1/5 bg-gray-800 overflow-y-auto px-4 py-2 text-black'>
       <div>
@@ -85,8 +138,10 @@ console.log(groups);
         {users.map((user, index) => (
                   <div 
                   onClick={() => handleSingleUsers(user)}
-                  key={index} className='p-2 bg-white rounded shadow mb-5'>
-                          {user.username}
+                  key={index} className={` ${chatReceiver === user.username ? 'bg-blue-500 text-white' : 'bg-white'} p-2 cursor-pointer  rounded shadow mb-5`}>
+                          {user.username} {receivedMessage.sender !== chatReceiver  ? unreadMessages[user.username] != 0 ? <span
+                          className={` rounded-full bg-orange-600 p-[0.20rem] text-sm text-white`}>{unreadMessages[user.username] } </span>
+                          : '' : '' }
                   </div>
               ))}
       </div>
@@ -105,8 +160,9 @@ console.log(groups);
         {groups.map((group, index) => (
                   <div 
                   onClick={() => handleGroups(group)}
-                  key={index} className='p-2 bg-white rounded shadow mb-5'>
-                          {group.groupName}
+                  key={index} className={` ${chatReceiver === group.groupName ? 'bg-blue-500 text-white' : 'bg-white'} p-2 cursor-pointer rounded shadow mb-5`}>
+                          {group.groupName} {receivedMessage.receiver !== chatReceiver ? unreadMessages[group.groupName] !=0 ? <span
+                          className={` rounded-full bg-orange-600 p-[0.20rem] text-sm text-white`}>{unreadMessages[group.groupName] } </span> : '' : ''}
                   </div>
               ))}
         </div>

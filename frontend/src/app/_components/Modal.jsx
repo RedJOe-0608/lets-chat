@@ -50,7 +50,7 @@ const Modal = ({ closeModal,setNewGroup }) => {
             </button>
           </div>
 
-            <h4 className='text-xs mb-5 text-gray-500'>If a group with the mentioned name does not exist, a new group will be created.</h4>
+            <h4 className='text-xs mb-5 text-gray-500'>You can only be added to groups by other members.</h4>
           <form onSubmit={createGroup}>
             <div className="mb-5">
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="groupName">
