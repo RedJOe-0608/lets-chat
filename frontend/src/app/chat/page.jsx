@@ -10,6 +10,8 @@ import Navbar from '../_components/Navbar';
 import { useChatMessagesStore } from '../zustand/useChatMessagesStore';
 import { useSocketStore } from '../zustand/useSocketStore';
 import { useGroupsStore } from '../zustand/useGroupsStore';
+import { useGroupParticipantsStore } from '../zustand/useGroupParticipantsStore';
+import { InfinitySpin, Watch } from 'react-loader-spinner'
 
 const ChatPage = () => {
   
@@ -17,13 +19,80 @@ const ChatPage = () => {
   const [sentMessage,setSentMessage] = useState({})
   const [receivedMessage,setReceivedMessage] = useState({})
   const [socket,setSocket] = useState(null)
-  
-  const {authName} = useAuthStore()
+  const [currentGroupName,setCurrentGroupName] = useState('')
+
+  const {authName,updateAuthName} = useAuthStore()
   const {users,updateUsers} = useUsersStore()
   const {updateGroups} = useGroupsStore()
   const {chatReceiver}= useChatReceiverStore()
   const {chatMessages,updateChatMessages}= useChatMessagesStore()
+  const {groupParticipants,updateGroupParticipants} = useGroupParticipantsStore()
   const {updateSocket}= useSocketStore()
+
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hydration useEffect
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+
+
+    if(hydrated)
+    {
+
+      //establish websocket connection when the component mounts.
+    const newSocket = io('http://localhost:8080',{
+      query: {
+        username: authName
+      }
+    })
+    setSocket(newSocket)
+    updateSocket(newSocket)
+    console.log(newSocket);
+   
+    newSocket.on('receive-message',(message)=> {
+        console.log("received message", message);
+          setReceivedMessage(message)
+      })
+    
+  
+    getUsers()
+    getMyGroups(authName,newSocket)
+    
+    // Cleanup function to remove the event listener when the component unmounts.
+    return () => newSocket.off('receive-message')
+    }
+
+
+  },[hydrated,authName, updateSocket])
+
+  useEffect(()=> {
+    if(hydrated)
+      updateChatMessages([...chatMessages,sentMessage])
+    },[hydrated,sentMessage])
+
+  useEffect(()=> {
+    if(hydrated)
+      updateChatMessages([...chatMessages,receivedMessage])
+  },[hydrated,receivedMessage])
+
+  if (!hydrated) {
+    // Render a loader until hydration is complete
+    return <div className='h-screen w-full flex justify-center items-center'>
+      <Watch
+    visible={true}
+    height="80"
+    width="80"
+    radius="48"
+    color="#4fa94d"
+    ariaLabel="watch-loading"
+    wrapperStyle={{}}
+    wrapperClass=""
+    />
+    </div>
+  }
 
   const getUsers = async() => {
     const res = await axios.get('http://localhost:5000/users',
@@ -34,62 +103,52 @@ const ChatPage = () => {
     updateUsers(res.data)
   }
 
-  const getGroups = async() => {
+  const getMyGroups = async(username,skt) => {
     const res = await axios.get('http://localhost:8080/groups',
+      {
+        params: {
+          username
+        }
+      }
+      ,
       {
       withCredentials: true
     })
     console.log(res.data);
+    const grpNames = []
+    res.data.map((grp) => {
+      grpNames.push(grp.groupName)
+    })
+    console.log(`${authName} is part of ${grpNames} groups`);
+
+    if (skt) {
+      skt.emit("joinRooms", authName, grpNames);
+    } else {
+      console.error('Socket is not initialized');
+    }
     updateGroups(res.data)
   }
 
   const sendMessage = (e) => {
     e.preventDefault()
-    const msgToBeSent = {
+    const msgInfo = {
       text: message,
       sender: authName,
-      receiver: chatReceiver
+      participants: currentGroupName ? groupParticipants : [authName,chatReceiver],
+      groupName: currentGroupName || ''
     }
-    console.log(message);
+    console.log("sent message", message);
+    console.log("current group name",currentGroupName);
     if(socket){
-      socket.emit('chat-message',msgToBeSent)
-      setSentMessage(msgToBeSent)
+      socket.emit('chat-message',msgInfo)
+      setSentMessage({
+        text: message,
+      sender: authName,
+      receiver: currentGroupName ? currentGroupName : chatReceiver,
+      })
       setMessage('')
     }
   }
-  
-  useEffect(() => {
-
-    //establish websocket connection when the component mounts.
-    const newSocket = io('http://localhost:8080',{
-      query: {
-        username: authName
-      }
-    })
-    setSocket(newSocket)
-    updateSocket(newSocket)
-
-    newSocket.on('receive-message',(message)=> {
-        setReceivedMessage(message)
-    })
-
-    getUsers()
-    getGroups()
-    
-    // Cleanup function to remove the event listener when the component unmounts.
-    return () => newSocket.off('receive-message')
-
-  },[])
-
-  useEffect(()=> {
-    updateChatMessages([...chatMessages,receivedMessage])
-  },[receivedMessage])
-
-  useEffect(()=> {
-    updateChatMessages([...chatMessages,sentMessage])
-  },[sentMessage])
-
- 
 
   console.log("Chat receiver is: ",chatReceiver);
 
@@ -97,18 +156,25 @@ const ChatPage = () => {
     <div className='flex flex-col h-screen'>
     <Navbar />
     <div className=' flex flex-grow divide-x-4'>
-        <ChatUsers />
+        <ChatUsers 
+        currentGroupName={currentGroupName}
+        setCurrentGroupName={setCurrentGroupName}/>
         <div className=' w-4/5 bg-gray-900 text-gray-200 flex flex-col justify-between'>
     <div className='w-full bg-gray-700 h-20'>
       <h2 className='text-md p-4'>{chatReceiver}</h2>
     </div>
     <div className='msgs-container text-right m-5 h-4/5 overflow-y-auto'>
-              {chatMessages?.map((message, index) => (
+              {chatMessages && chatMessages?.map((message, index) => (
                 <div key={index} 
-                className={`msg my-5 ${message.sender === authName ? 'text-right' : 'text-left'} `}
+                className={`msg my-5 ${message?.sender === authName ? 'text-right' : 'text-left'} `}
                 >
-                <span className={`${ !chatReceiver ? 'hidden' : message.sender === authName ? 'bg-orange-500' : 'bg-blue-500'} p-3 rounded-lg`}>
-                    {message.text}
+              <span className={`${ message?.sender === authName ? 'bg-orange-500' :
+                  (( message.receiver === authName && message?.sender === chatReceiver) //1:1 msg
+                  || 
+                  (message?.receiver !== authName && message?.receiver === chatReceiver)) //group msg
+                  ? 'bg-blue-500' : 'hidden'} p-3 rounded-lg`}
+                >
+                    {message?.text}
                 </span>
                 </div>
               ))}

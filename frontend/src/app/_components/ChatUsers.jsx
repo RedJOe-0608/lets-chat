@@ -7,17 +7,28 @@ import { useAuthStore } from '../zustand/useAuthStore';
 import { FaPlus } from "react-icons/fa";
 import Modal from './Modal';
 import { useGroupsStore } from '../zustand/useGroupsStore';
+import { useGroupParticipantsStore } from '../zustand/useGroupParticipantsStore';
 
-const ChatUsers = () => {
+const ChatUsers = ({currentGroupName,setCurrentGroupName}) => {
 
  const { users } = useUsersStore();
- const {groups} = useGroupsStore()
+ const {groups,updateGroups} = useGroupsStore()
  const {authName} = useAuthStore()
+
+ const [newGroup, setNewGroup] = useState('')
 
  const {chatReceiver,updateChatReceiver} = useChatReceiverStore()
  const {updateChatMessages} = useChatMessagesStore()
+ const{groupParticipants} = useGroupParticipantsStore()
 
 
+// this useEffect is for updating the UI after a new group has been created. 
+ useEffect(() => {
+  console.log(newGroup);
+  updateGroups([...groups,{groupName:newGroup}])
+ },[newGroup])
+
+console.log(groups);
  const [isModalOpen, setIsModalOpen] = useState(false);
 
  const openModal = () => {
@@ -28,18 +39,31 @@ const ChatUsers = () => {
    setIsModalOpen(false);
  };
 
+ const handleSingleUsers = (user) => {
+  updateChatReceiver(user.username)
+  setCurrentGroupName('')
+ }
+
+ const handleGroups = (group) => {
+  updateChatReceiver(group.groupName)
+  setCurrentGroupName(group.groupName)
+ }
+
  const getMsgs = async () => {
-   const res = await axios.get('http://localhost:8080/messages',
-       {
-           params: {
-               'sender': authName,
-               'receiver': chatReceiver
-           }
-       },
-       {
-           withCredentials: true
-       });
-   if (res.data.length !== 0) {
+
+    const res = await axios.get('http://localhost:8080/messages',
+        {
+            params: {
+                "participants": currentGroupName ? groupParticipants : [authName,chatReceiver],
+                "groupName": currentGroupName
+            }
+        },
+        {
+            withCredentials: true
+        });
+
+  console.log(res.data);
+  if (res.data.length !== 0) {
      updateChatMessages(res.data);
    } else {
      updateChatMessages([]);
@@ -60,7 +84,7 @@ const ChatUsers = () => {
         <h1 className='text-2xl text-white mb-5'>Chats</h1>
         {users.map((user, index) => (
                   <div 
-                  onClick={() => updateChatReceiver(user.username)}
+                  onClick={() => handleSingleUsers(user)}
                   key={index} className='p-2 bg-white rounded shadow mb-5'>
                           {user.username}
                   </div>
@@ -72,12 +96,15 @@ const ChatUsers = () => {
           <FaPlus className='cursor-pointer' color='white'
           onClick={openModal}
           />
-          {isModalOpen && <Modal closeModal={closeModal} />}       
+          {isModalOpen && <Modal 
+          closeModal={closeModal} 
+          setNewGroup={setNewGroup} 
+          />}       
         </div>
         <div>
         {groups.map((group, index) => (
                   <div 
-                  // onClick={() => updateChatReceiver(user.username)}
+                  onClick={() => handleGroups(group)}
                   key={index} className='p-2 bg-white rounded shadow mb-5'>
                           {group.groupName}
                   </div>

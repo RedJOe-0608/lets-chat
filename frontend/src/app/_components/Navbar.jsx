@@ -13,6 +13,7 @@ const Navbar = () => {
         <span className="self-center text-sm font-semibold whitespace-nowrap dark:text-white">Let's Chat</span>
     </div>
     <h3 className='text-white'>{authName}</h3>
+    {!authName && (<h3 className='text-white'>authName not found!</h3>)}
     </div>
     </nav>
   )

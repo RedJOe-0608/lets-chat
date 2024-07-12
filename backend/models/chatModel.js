@@ -6,15 +6,14 @@ const messageSchema = new mongoose.Schema({
         required: true
     },
     sender: {
-        type: String,
+        type:String,
         required: true
     },
-    // not necessary to have receiver
+    //in 1:1 msg, this will be a user. in group msg, it will be group name.
     receiver: {
-        type: String,
+        type:String,
         required: true
     },
- 
 })
 
 const conversationSchema = new mongoose.Schema({
@@ -22,7 +21,10 @@ const conversationSchema = new mongoose.Schema({
         type: String,
         required: true
     }],
-    messages: [messageSchema]
+    messages: [messageSchema],
+    groupName: {
+        type: String,
+    }
 },{
     timestamps: true
 })

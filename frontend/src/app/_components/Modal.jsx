@@ -1,32 +1,42 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { MdClose } from "react-icons/md";
 import { useUsersStore } from '../zustand/useUsersStore'
 import { useSocketStore } from '../zustand/useSocketStore';
+import { useGroupsStore } from '../zustand/useGroupsStore';
+import { toast } from 'react-toastify';
+import { useGroupParticipantsStore } from '../zustand/useGroupParticipantsStore';
 
-const Modal = ({ closeModal }) => {
+const Modal = ({ closeModal,setNewGroup }) => {
 
     const { users } = useUsersStore();
     const {socket} = useSocketStore()
+    const {groups,updateGroups} = useGroupsStore()
+    const {groupParticipants, updateGroupParticipants} = useGroupParticipantsStore()
+    const groupNameRef = useRef()
 
-    const [groupName, setGroupName] = useState('')
-    const [selectedParticipants, setSelectedParticipants] = useState([]);
+    const [participants,setParticipants] = useState([])
 
     const createGroup = (e) => {
         e.preventDefault()
-        console.log(socket.id);
-        console.log('group name:',groupName);
-        console.log('Participants are: ', selectedParticipants);
+        // updateGroups([...groups,groupNameRef.current.value])
         closeModal()
+        
+        setNewGroup(groupNameRef.current.value)
+        socket.emit('joinRoom',groupNameRef.current.value,participants)
+        toast.success(`Group with name ${groupNameRef.current.value} created successfully!`)
+        updateGroupParticipants(participants)
+        console.log("Group participants",groupParticipants);
+        setParticipants([])
 
-        socket.emit('joinRoom',groupName,selectedParticipants)
+        
     }
 
     const handleParticipantChange = (e) => {
         const value = e.target.value;
         if (e.target.checked) {
-          setSelectedParticipants([...selectedParticipants, value]);
+          setParticipants([...participants, value]);
         } else {
-          setSelectedParticipants(selectedParticipants.filter((participant) => participant !== value));
+          setParticipants(participants.filter((participant) => participant !== value));
         }
       };
 
@@ -51,8 +61,7 @@ const Modal = ({ closeModal }) => {
                 id="groupName"
                 type="text"
                 placeholder="Group Name..."
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
+                ref={groupNameRef}
                 required
               />
             </div>
