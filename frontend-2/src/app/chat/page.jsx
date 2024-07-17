@@ -11,7 +11,7 @@ import { useChatMessagesStore } from '../zustand/useChatMessagesStore';
 import { useSocketStore } from '../zustand/useSocketStore';
 import { useGroupsStore } from '../zustand/useGroupsStore';
 import { useGroupParticipantsStore } from '../zustand/useGroupParticipantsStore';
-import {Watch } from 'react-loader-spinner'
+import { InfinitySpin, Watch } from 'react-loader-spinner'
 import { toast } from 'react-toastify';
 
 const ChatPage = () => {
@@ -45,7 +45,7 @@ const ChatPage = () => {
       console.log("Component is hydrated, establishing WebSocket connection");
 
       //establish websocket connection when the component mounts.
-      newSocket = io('http://localhost:8080',{
+      newSocket = io('http://localhost:8081',{
       query: {
         username: authName
       }
@@ -98,7 +98,7 @@ const ChatPage = () => {
   // }, [socket]);
 
 
-useEffect(()=> {
+  useEffect(()=> {
     if(groups.length > 0 && authName)
     {
       console.log("...");
@@ -106,15 +106,14 @@ useEffect(()=> {
     }
   },[socket,groups,authName])
 
-  
   useEffect(() => {
     if(hydrated && socket)
     {
       socket.on('receive-message',(message)=> {
-        console.log("received message", message);
-          setReceivedMessage(message)         
-      })
 
+        console.log("received message", message);
+          setReceivedMessage(message)          
+      })
     }
   },[hydrated,socket])
 
@@ -123,8 +122,13 @@ useEffect(()=> {
         updateChatMessages([...chatMessages,sentMessage])
     },[hydrated, sentMessage])
 
-  // for toast notification on new message 
   useEffect(()=> {
+    if(hydrated && receivedMessage)
+      updateChatMessages([...chatMessages,receivedMessage])
+  },[hydrated, receivedMessage])
+
+   // for toast notification on new message 
+   useEffect(()=> {
     if(hydrated && Object.keys(receivedMessage).length > 0)
     {
         let isGroupMessage = false

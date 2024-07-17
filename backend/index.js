@@ -7,6 +7,7 @@ import connectToDB from "./db/connectToMongo.js"
 import { addMsgToConversation } from "./controllers/messagesController.js"
 import messagesRouter from './routes/messagesRoutes.js'
 import getMyGroupsRouter from './routes/getMyGroupsRoutes.js'
+import { subscribe,publish, unsubscribe } from "./redis/MessagesPubSub.js"
 
 
 dotenv.config()
@@ -41,6 +42,21 @@ io.on('connection', (socket) => {
 
     userSocketMap[username] = socket
 
+    // socket.on('subscribeToGroupChannels',(groups)=> {
+    //     // console.log("The groups are: " ,groups);
+    //     console.log("Subscribing to channels...");
+
+    //     groups.forEach((group) => {
+    //         const groupName = `group_${group.groupName}`
+    //         subscribe(groupName, (message) => {
+    //             const receiver = JSON.parse(message).receiver
+    //             console.log(`This is group subscriber of ${username}. msg is ${message}`);
+
+    //             socket.to(receiver).emit("receive-message", JSON.parse(message));
+    //         })
+    //     })
+    // })
+
     socket.on('chat-message', (msgInfo) => {
         //for testing
         console.log('Received message ' + msgInfo.text);
@@ -56,47 +72,96 @@ io.on('connection', (socket) => {
 
         if(msgInfo.groupName !== '')
         {
-            socket.to(msgInfo.groupName).emit("receive-message",message)
+            // socket.to(msgInfo.groupName).emit("receive-message",message)
+            const channelName = `group_${msgInfo.groupName}`
+            publish(channelName, JSON.stringify(message));
         }
         else{
             const receiverSocket = userSocketMap[msgInfo.participants[1]];
             if(receiverSocket)
+            {
                 receiverSocket.emit("receive-message",message)
-            console.log(`msg emitted to ${msgInfo.participants[1]}`);
+                console.log(`msg emitted to ${msgInfo.participants[1]}`);
+            }else{
+                const channelName = `chat_${msgInfo.participants[1]}`
+                publish(channelName, JSON.stringify(message));
+            }
+
         }
 
         addMsgToConversation(msgInfo.participants,msgInfo.groupName,message)
     })
 
+    socket.on('ws-disconnect',() => {
+        console.log("Websocket connection disconnected");
+    })
+
+    socket.on('subscribeToRedisChannels',(groups,authName) => {
+
+    //each client is subscribed to its own channel, as well as all the groups the client is part of.
+            
+    // subscribing to chat channel 
+    const channelName = `chat_${authName}`
+    subscribe(channelName, (message) => {
+        console.log("This is chat subscriber");
+        io.emit("receive-message", JSON.parse(message));
+        console.log("Chat subscriber has done its job");
+    });
+
+    //subscribing to group channels
+
+        const groupNames = groups.map(group => group.groupName)
+
+        for(let i=0;i<groupNames.length;i++)
+        {
+            const groupName = `group_${groupNames[i]}`
+                subscribe(groupName, (message) => {
+                    const receiver = JSON.parse(message).receiver
+                    console.log("This is group subscriber");
+                    io.to(receiver).emit("receive-message", JSON.parse(message));
+                    console.log("group subscriber has done its job");
+                })
+
+        }
+        
+    })
+
     socket.on('joinRooms',(username,groupNames)=> {
+
         for(let i=0;i<groupNames.length;i++)
         {
             socket.join(groupNames[i])
             console.log(`${username} joined group ${groupNames[i]}`);
+
+            //  subscribing to group channels
+        
+            // const groupName = `group_${groupNames[i]}`
+            // subscribe(groupName, (message) => {
+            //     const receiver = JSON.parse(message).receiver
+            //     console.log("This is group subscriber");
+            //     socket.to(receiver).emit("receive-message", JSON.parse(message));
+            //     console.log("group subscriber has done its job");
+            // })
+        
         }
     })
 
     //join a room
     socket.on('joinRoom',(groupName,participants) => {
+
         console.log("Group participants" + participants);
-        if(!participants)
-        {
-            socket.join(groupName)
-        }
-        else
-        {
-            for(let i=0;i<participants.length;i++)
-            {
-                const skt = userSocketMap[participants[i]]
-                if(skt)
-                    skt.join(groupName)
-                console.log(`${participants[i]} joined group ${groupName}`);
-                // console.log(`Socket ${skt.id} joined room ${groupName}`);
-                // console.log(skt);
-            }
+        
+        socket.join(groupName)
     
-            addMsgToConversation(participants,groupName)
-        }
+        addMsgToConversation(participants,groupName)
+
+        const group = `group_${groupName}`
+        subscribe(group, (message) => {
+            const receiver = JSON.parse(message).receiver
+            console.log("This is group subscriber");
+            console.log(`message sent from redis to group ${receiver} and username: ${username}`);
+            io.to(receiver).emit("receive-message", JSON.parse(message));
+    })
     })
 
       // Leave a room
