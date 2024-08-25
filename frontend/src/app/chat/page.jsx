@@ -45,7 +45,7 @@ const ChatPage = () => {
       console.log("Component is hydrated, establishing WebSocket connection");
 
       //establish websocket connection when the component mounts.
-      newSocket = io('http://localhost:8080',{
+      newSocket = io(`${process.env.NEXT_PUBLIC_BE_HOST}:8080`,{
       query: {
         username: authName
       }
@@ -163,7 +163,7 @@ useEffect(()=> {
   }
 
   const getUsers = async() => {
-    const res = await axios.get('http://localhost:5000/users',
+    const res = await axios.get(`${process.env.NEXT_PUBLIC_BE_HOST}:5000/users`,
       {
           withCredentials: true
       })
@@ -172,7 +172,7 @@ useEffect(()=> {
   }
 
   const getMyGroups = async(username,skt) => {
-    const res = await axios.get('http://localhost:8080/groups',
+    const res = await axios.get(`${process.env.NEXT_PUBLIC_BE_HOST}:8080/groups`,
       {
         params: {
           username

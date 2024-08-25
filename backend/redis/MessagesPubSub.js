@@ -48,7 +48,7 @@ const publisher = new Redis({
 //     }
 
 
-subscriber.setMaxListeners(25); // Increase limit to 20
+subscriber.setMaxListeners(25); // Increase limit to 25 
 
 const activeSubscriptions = new Set(); // Set to track active subscriptions
 

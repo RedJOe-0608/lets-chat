@@ -18,7 +18,7 @@ const SigninPage = () => {
     const signinFunc = async (e) => {
         e.preventDefault()
         try {
-            const res = await axios.post('http://localhost:5000/auth/signin', {
+            const res = await axios.post(`${process.env.NEXT_PUBLIC_BE_HOST}:5000/auth/signin`, {
                 username,
                 password
             },

@@ -78,7 +78,7 @@ useEffect(() => {
 
  const getMsgs = async () => {
 
-    const res = await axios.get('http://localhost:8080/messages',
+    const res = await axios.get(`${process.env.NEXT_PUBLIC_BE_HOST}:8080/messages`,
         {
             params: {
                 "participants": currentGroupName ? groupParticipants : [authName,chatReceiver],

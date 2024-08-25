@@ -13,7 +13,7 @@ const app = express()
 
 app.use(cors({
     credentials: true,
-    origin: ["http://localhost:3000","http://localhost:3001","http://localhost:3002"],
+    origin: [`${process.env.BE_HOST}:3000`,`${process.env.BE_HOST}:3001`,`${process.env.BE_HOST}:3002`],
     // methods: ["GET", "POST"],
     // allowedHeaders: ["*"],
    }));
